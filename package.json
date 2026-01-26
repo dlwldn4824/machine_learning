@@ -1,0 +1,29 @@
+{
+  "name": "todo-calendar-app",
+  "version": "1.0.0",
+  "description": "캘린더 일정 관리 및 팀 채팅 애플리케이션",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "install:all": "pnpm install",
+    "build": "pnpm --filter frontend build",
+    "start": "pnpm --filter backend start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "react",
+    "nodejs",
+    "express",
+    "calendar",
+    "chat",
+    "todo"
+  ],
+  "author": "",
+  "license": "ISC"
+}
