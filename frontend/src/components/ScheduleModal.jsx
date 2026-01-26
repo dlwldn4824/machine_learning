@@ -3,6 +3,8 @@ import { format } from 'date-fns'
 import './ScheduleModal.css'
 
 function ScheduleModal({ date, schedule, categories, onClose, onDelete, onRefresh }) {
+  // categories가 없을 경우를 대비
+  const safeCategories = categories || []
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -46,7 +48,11 @@ function ScheduleModal({ date, schedule, categories, onClose, onDelete, onRefres
       })
       
       if (response.ok) {
-        onRefresh()
+        const newSchedule = await response.json()
+        // 즉시 새 일정을 전달하여 상태 업데이트
+        if (onRefresh) {
+          onRefresh(newSchedule)
+        }
         onClose()
       } else {
         const error = await response.json()
@@ -54,7 +60,19 @@ function ScheduleModal({ date, schedule, categories, onClose, onDelete, onRefres
       }
     } catch (error) {
       console.error('일정 저장 실패:', error)
-      alert('일정 저장에 실패했습니다.')
+      // 네트워크 오류 시에도 로컬에 임시 저장
+      const tempSchedule = {
+        id: Date.now(),
+        ...formData,
+        is_adjustable: formData.is_adjustable ? 1 : 0,
+        category_name: safeCategories.find(c => c.id === parseInt(formData.category_id))?.name || null,
+        category_color: safeCategories.find(c => c.id === parseInt(formData.category_id))?.color || null,
+        created_at: new Date().toISOString()
+      }
+      if (onRefresh) {
+        onRefresh(tempSchedule)
+      }
+      onClose()
     }
   }
 
@@ -129,7 +147,7 @@ function ScheduleModal({ date, schedule, categories, onClose, onDelete, onRefres
               onChange={handleChange}
             >
               <option value="">카테고리 선택</option>
-              {categories.map(cat => (
+              {safeCategories.map(cat => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
