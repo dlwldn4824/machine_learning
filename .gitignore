@@ -1,13 +1,29 @@
-# Dependencies
-node_modules/
-frontend/node_modules/
-backend/node_modules/
-
-# Build outputs
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
 dist/
 build/
-frontend/dist/
-backend/dist/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data & Models (용량 큰 파일)
+data/raw/*.csv
+data/raw/*.xlsx
+data/processed/*.csv
+outputs/*.pkl
+outputs/*.joblib
+outputs/*.h5
+outputs/*.pth
+
+# Dependencies
+node_modules/
+
+# Build outputs
 
 # Environment variables
 .env
