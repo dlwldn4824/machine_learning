@@ -66,3 +66,46 @@ def load_dessert_data(
     """
     raw = load_raw_data(data_dir)
     return filter_dessert(raw, col=industry_col or INDUSTRY_COL)
+
+
+# 연령대 컬럼 (제거용)
+AGE_COLUMNS = [
+    "연령대_10_매출_금액", "연령대_20_매출_금액", "연령대_30_매출_금액",
+    "연령대_40_매출_금액", "연령대_50_매출_금액", "연령대_60_이상_매출_금액",
+    "연령대_10_매출_건수", "연령대_20_매출_건수", "연령대_30_매출_건수",
+    "연령대_40_매출_건수", "연령대_50_매출_건수", "연령대_60_이상_매출_건수",
+]
+
+
+def aggregate_by_year_quarter_dong(
+    df: pd.DataFrame,
+    drop_age: bool = True,
+) -> pd.DataFrame:
+    """
+    년도·분기별, 행정동별로 평균 집계. 연령대 컬럼 제거.
+    기준_년분기_코드: 20211 = 2021년 1분기
+    """
+    df = df.copy()
+
+    # 연도, 분기 파싱 (20211 -> 2021, 1)
+    df["연도"] = df["기준_년분기_코드"].astype(str).str[:4].astype(int)
+    df["분기"] = df["기준_년분기_코드"].astype(str).str[-1].astype(int)
+
+    if drop_age:
+        cols_to_drop = [c for c in AGE_COLUMNS if c in df.columns]
+        df = df.drop(columns=cols_to_drop)
+
+    # 집계 제외 컬럼
+    group_cols = ["연도", "분기", "행정동_코드", "행정동_코드_명"]
+    exclude = group_cols + ["기준_년분기_코드", "서비스_업종_코드", "서비스_업종_코드_명", "_source_file"]
+
+    numeric_cols = df.select_dtypes(include="number").columns.tolist()
+    agg_cols = [c for c in numeric_cols if c not in exclude and c in df.columns]
+
+    result = (
+        df.groupby(group_cols, as_index=False)[agg_cols]
+        .mean()
+        .round(2)
+    )
+
+    return result
