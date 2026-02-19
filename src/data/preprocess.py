@@ -78,6 +78,18 @@ def add_lag_features(
     return df
 
 
+def add_lag_ratio(df: pd.DataFrame, value_col: str = "디저트_비중", lags: tuple[int, ...] = (1, 4)) -> pd.DataFrame:
+    """
+    디저트_비중의 Lag (타겟 예측 시 현재 비중 제외, 과거 비중만 사용)
+    lag1_비중=전분기, lag4_비중=전년 동분기
+    """
+    df = df.copy()
+    df = df.sort_values(["행정동_코드", "연도", "분기"]).reset_index(drop=True)
+    for lag in lags:
+        df[f"lag{lag}_비중"] = df.groupby("행정동_코드")[value_col].shift(lag)
+    return df
+
+
 def add_growth_rate(df: pd.DataFrame, value_col: str = "당월_매출_금액") -> pd.DataFrame:
     """전분기 대비 성장률 = (이번 - 지난) / 지난"""
     df = df.copy()
@@ -120,10 +132,142 @@ def preprocess_ml(
         df = add_log_transform(df)
     if add_lag:
         df = add_lag_features(df, lags=(1, 4))
+    if add_ratio:
+        df = add_lag_ratio(df, lags=(1, 4))  # lag1_비중, lag4_비중
     if add_growth:
         df = add_growth_rate(df)
     if add_season:
         df = add_seasonality(df)
 
-    # lag/성장률에서 생긴 결측 제거 (옵션: dropna)
     return df
+
+
+def add_target(
+    df: pd.DataFrame,
+    value_col: str = "디저트_비중",
+    shift: int = -1,
+) -> pd.DataFrame:
+    """
+    시계열 타겟 생성: 다음 분기 값 예측
+    shift=-1 → 다음 분기 디저트_비중
+    """
+    df = df.copy()
+    df = df.sort_values(["행정동_코드", "연도", "분기"]).reset_index(drop=True)
+    df["target"] = df.groupby("행정동_코드")[value_col].shift(shift)
+    return df
+
+
+def clip_outliers(df: pd.DataFrame, cols: list[str], iqr_factor: float = 1.5) -> pd.DataFrame:
+    """IQR 방식 이상치 클리핑"""
+    df = df.copy()
+    for col in cols:
+        if col not in df.columns:
+            continue
+        q1 = df[col].quantile(0.25)
+        q3 = df[col].quantile(0.75)
+        iqr = q3 - q1
+        lower = q1 - iqr_factor * iqr
+        upper = q3 + iqr_factor * iqr
+        df[col] = df[col].clip(lower, upper)
+    return df
+
+
+def create_cluster_features(df: pd.DataFrame) -> pd.DataFrame:
+    """군집 분석용 행정동 단위 피처 (k-means 등)"""
+    agg = df.groupby("행정동_코드").agg(
+        매출_mean=("당월_매출_금액", "mean"),
+        매출_std=("당월_매출_금액", "std"),
+        성장률_mean=("성장률", "mean"),
+        디저트_비중_mean=("디저트_비중", "mean"),
+    ).reset_index()
+    agg["매출_std"] = agg["매출_std"].fillna(0)
+    return agg
+
+
+def time_split(
+    df: pd.DataFrame,
+    test_year: int = 2024,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """시계열 기반 Train/Test 분리 (연도 기준)"""
+    train = df[df["연도"] < test_year].copy()
+    test = df[df["연도"] >= test_year].copy()
+    return train, test
+
+
+def add_cpi(
+    df: pd.DataFrame,
+    cpi_path: str | Path | None = None,
+    data_dir: str | Path = "data/raw",
+    inflation_excel_paths: dict | None = None,
+) -> pd.DataFrame:
+    """
+    CPI·인플레이션·기대인플레이션 변수 병합.
+
+    우선순위:
+    1) 3개 엑셀(소비자물가지수, 월별 등락률, 기대인플레이션)이 있으면 → build_macro_quarterly로 분기 테이블 생성
+    2) data/cpi.csv 또는 data/cpi_example.csv
+    3) KOSIS 기반 예시값
+
+    병합 컬럼: CPI, inflation_mom, expected_inflation, CPI_qoq, CPI_yoy, 물가상승률(CPI_qoq 또는 fallback)
+    """
+    df = df.copy()
+    cpi_path = Path(cpi_path) if cpi_path else Path("data/cpi.csv")
+    alt_path = Path("data/cpi_example.csv")
+    data_dir = Path(data_dir)
+
+    # 1) 3개 엑셀 기반 분기 거시변수
+    try:
+        from .load_inflation import build_macro_quarterly
+
+        paths = inflation_excel_paths or {}
+        macro = build_macro_quarterly(
+            path_cpi=paths.get("cpi") or data_dir / "소비자물가지수_10년.xlsx",
+            path_mom=paths.get("mom") or data_dir / "월별_소비자물가_등락률_10년.xlsx",
+            path_expected=paths.get("expected") or data_dir / "기대인플레이션율_전국_10년.xlsx",
+            data_dir=data_dir,
+        )
+        if len(macro) > 0:
+            # 물가상승률: CPI_qoq(분기 대비) 사용, 없으면 inflation_mom/100
+            if "CPI_qoq" in macro.columns:
+                macro["물가상승률"] = macro["CPI_qoq"]
+            elif "inflation_mom" in macro.columns:
+                macro["물가상승률"] = macro["inflation_mom"] / 100
+            else:
+                macro["물가상승률"] = np.nan
+            df = df.merge(macro, on=["연도", "분기"], how="left")
+            if "lag1_비중" in df.columns:
+                df["물가_x_lag1비중"] = df["물가상승률"].fillna(0) * df["lag1_비중"].fillna(0)
+            return df
+    except Exception:
+        pass
+
+    # 2) 기존 cpi.csv / cpi_example.csv
+    if cpi_path.exists():
+        cpi = pd.read_csv(cpi_path)
+    elif alt_path.exists():
+        cpi = pd.read_csv(alt_path)
+    else:
+        rows = []
+        for y in range(2020, 2025):
+            rate = {2020: 0.5, 2021: 2.5, 2022: 5.1, 2023: 3.6, 2024: 2.2}.get(y, 2.0) / 100 / 4
+            for q in range(1, 5):
+                rows.append({"연도": y, "분기": q, "물가상승률": rate})
+        cpi = pd.DataFrame(rows)
+    df = df.merge(cpi, on=["연도", "분기"], how="left")
+    if "lag1_비중" in df.columns:
+        df["물가_x_lag1비중"] = df["물가상승률"].fillna(0) * df["lag1_비중"].fillna(0)
+    return df
+
+
+def calculate_vif(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    """다중공선성: VIF 계산 (VIF>10 이면 제거 고려)"""
+    try:
+        from statsmodels.stats.outliers_influence import variance_inflation_factor
+    except ImportError:
+        raise ImportError("statsmodels 필요: pip install statsmodels")
+
+    X = df[cols].dropna()
+    vif = pd.DataFrame()
+    vif["feature"] = X.columns
+    vif["VIF"] = [variance_inflation_factor(X.values.astype(float), i) for i in range(X.shape[1])]
+    return vif.sort_values("VIF", ascending=False)
