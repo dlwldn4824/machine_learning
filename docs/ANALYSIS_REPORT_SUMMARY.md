@@ -2,7 +2,9 @@
 
 ## 분석 결과 보고서 요약
 
-> **관련 문서**: [MODEL_DESIGN_SPEC.md](MODEL_DESIGN_SPEC.md) — 최종 Feature List, 실험표, 해석 템플릿
+> **관련 문서**  
+> - [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) — 전체 흐름·실행 순서·검증 결과 줄글 정리  
+> - [MODEL_DESIGN_SPEC.md](MODEL_DESIGN_SPEC.md) — 최종 Feature List, 실험표, 해석 템플릿
 
 ---
 
