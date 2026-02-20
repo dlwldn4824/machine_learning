@@ -157,6 +157,89 @@ def add_target(
     return df
 
 
+def add_delta_targets(
+    df: pd.DataFrame,
+    ratio_col: str = "디저트_비중",
+    forecast: bool = True,
+) -> pd.DataFrame:
+    """
+    타겟을 "비중 변화량(Δ)"으로 추가.
+    관성이 빠져서 물가 신호가 더 잘 보임.
+
+    forecast=True:  예측용 → 다음 분기 변화 (ratio_{t+1} - ratio_t)
+    forecast=False: 설명용 → 당분기 변화 (ratio_t - ratio_{t-1})
+    """
+    df = df.sort_values(["행정동_코드", "연도", "분기"]).copy()
+    prev = df.groupby("행정동_코드")[ratio_col].shift(1)
+    next_ = df.groupby("행정동_코드")[ratio_col].shift(-1)
+
+    if forecast:
+        # (A) 예측 타겟: 다음 분기 - 이번 분기
+        df["target_delta_ratio"] = next_ - df[ratio_col]
+    else:
+        # (A) 당분기 변화량: 이번 분기 - 전분기
+        df["target_delta_ratio"] = df[ratio_col] - prev
+
+    # (B) 변화율(선택): (이번-전분기)/전분기
+    df["target_growth_ratio"] = (df[ratio_col] - prev) / prev.replace(0, np.nan)
+    df["target_growth_ratio"] = df["target_growth_ratio"].replace([np.inf, -np.inf], np.nan)
+
+    return df
+
+
+def add_inflation_shocks(
+    df: pd.DataFrame,
+    col_qoq: str | None = None,
+    col_exp: str | None = None,
+    window: int = 4,
+) -> pd.DataFrame:
+    """
+    물가 "충격(Shock)" 변수: 예상보다 더 오른 구간(서프라이즈).
+    - Shock A (de-mean): 현재 − 최근 1년 평균
+    - Shock B (z-score): (현재 − 평균) / 표준편차
+    - Shock C (가속): 이번 qoq − 이전 qoq
+    """
+    df = df.copy()
+    col_qoq = col_qoq or ("CPI_qoq" if "CPI_qoq" in df.columns else "물가상승률")
+    col_exp = col_exp or "expected_inflation"
+    if col_qoq not in df.columns:
+        return df
+
+    qcols = ["연도", "분기", col_qoq]
+    if col_exp in df.columns:
+        qcols.append(col_exp)
+    tmp = (
+        df.drop_duplicates(["연도", "분기"])[qcols]
+        .sort_values(["연도", "분기"])
+        .copy()
+    )
+
+    tmp["qoq_ma4"] = tmp[col_qoq].rolling(window).mean().shift(1)
+    tmp["qoq_std4"] = tmp[col_qoq].rolling(window).std().shift(1)
+
+    tmp["infl_shock_ma"] = tmp[col_qoq] - tmp["qoq_ma4"]
+    tmp["infl_shock_z"] = (tmp[col_qoq] - tmp["qoq_ma4"]) / tmp["qoq_std4"].replace(0, np.nan)
+    tmp["infl_accel"] = tmp[col_qoq] - tmp[col_qoq].shift(1)
+
+    merge_cols = ["연도", "분기", "infl_shock_ma", "infl_shock_z", "infl_accel"]
+
+    if col_exp in tmp.columns:
+        tmp["exp_ma4"] = tmp[col_exp].rolling(window).mean().shift(1)
+        tmp["exp_shock_ma"] = tmp[col_exp] - tmp["exp_ma4"]
+        merge_cols.append("exp_shock_ma")
+
+    df = df.merge(tmp[merge_cols], on=["연도", "분기"], how="left")
+
+    # 지연효과 (한 분기 늦게 반응)
+    for c in ["infl_shock_ma", "infl_shock_z", "infl_accel"]:
+        if c in df.columns:
+            df[f"{c}_lag1"] = df.groupby("행정동_코드")[c].shift(1)
+    if "exp_shock_ma" in df.columns:
+        df["exp_shock_ma_lag1"] = df.groupby("행정동_코드")["exp_shock_ma"].shift(1)
+
+    return df
+
+
 def clip_outliers(df: pd.DataFrame, cols: list[str], iqr_factor: float = 1.5) -> pd.DataFrame:
     """IQR 방식 이상치 클리핑"""
     df = df.copy()

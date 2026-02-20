@@ -13,4 +13,4 @@ if __name__ == "__main__":
     df = aggregate_by_year_quarter_dong(df, drop_age=True)
     df = preprocess_ml(df)
     plot_preprocess_results(df)
-    print("\n전처리 시각화 완료. outputs/ 폴더를 확인하세요.")
+    print("\n전처리 시각화 완료. outputs/figures/preprocess/ 폴더를 확인하세요.")

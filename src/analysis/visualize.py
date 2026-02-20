@@ -14,7 +14,7 @@ else:
     plt.rcParams["font.family"] = "DejaVu Sans"
 
 
-def plot_monthly_trend(df: pd.DataFrame, out_dir: Path | str = "outputs") -> None:
+def plot_monthly_trend(df: pd.DataFrame, out_dir: Path | str = "outputs/figures/basic") -> None:
     """월별(분기별) 디저트 매출 추이 - 5개년 (데이터는 분기 단위)"""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -44,7 +44,7 @@ def plot_monthly_trend(df: pd.DataFrame, out_dir: Path | str = "outputs") -> Non
     print(f"저장: {out_dir / 'monthly_trend.png'}")
 
 
-def plot_quarterly_trend(df: pd.DataFrame, out_dir: Path | str = "outputs") -> None:
+def plot_quarterly_trend(df: pd.DataFrame, out_dir: Path | str = "outputs/figures/basic") -> None:
     """연도·분기별 매출 추이 (라인)"""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -67,7 +67,7 @@ def plot_quarterly_trend(df: pd.DataFrame, out_dir: Path | str = "outputs") -> N
     print(f"저장: {out_dir / 'quarterly_trend.png'}")
 
 
-def plot_top_districts(df: pd.DataFrame, n: int = 15, out_dir: Path | str = "outputs") -> None:
+def plot_top_districts(df: pd.DataFrame, n: int = 15, out_dir: Path | str = "outputs/figures/basic") -> None:
     """매출 상위 행정동 (전체 기간 합계)"""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -85,7 +85,7 @@ def plot_top_districts(df: pd.DataFrame, n: int = 15, out_dir: Path | str = "out
     print(f"저장: {out_dir / 'top_districts.png'}")
 
 
-def plot_gender_ratio(df: pd.DataFrame, out_dir: Path | str = "outputs") -> None:
+def plot_gender_ratio(df: pd.DataFrame, out_dir: Path | str = "outputs/figures/basic") -> None:
     """연도별 남성/여성 매출 비율"""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -112,7 +112,7 @@ def plot_gender_ratio(df: pd.DataFrame, out_dir: Path | str = "outputs") -> None
     print(f"저장: {out_dir / 'gender_ratio.png'}")
 
 
-def plot_preprocess_results(df: pd.DataFrame, out_dir: Path | str = "outputs") -> None:
+def plot_preprocess_results(df: pd.DataFrame, out_dir: Path | str = "outputs/figures/preprocess") -> None:
     """전처리 결과 시각화 (preprocess.py 출력)"""
     import seaborn as sns
 
@@ -205,7 +205,7 @@ def plot_preprocess_results(df: pd.DataFrame, out_dir: Path | str = "outputs") -
 def plot_kmeans_clusters(
     df: pd.DataFrame,
     n_clusters: int = 3,
-    out_dir: Path | str = "outputs",
+    out_dir: Path | str = "outputs/figures/ml",
 ) -> None:
     """k-means 군집 결과: 군집별 평균 디저트 비중 추이 시각화"""
     from sklearn.cluster import KMeans
@@ -260,7 +260,7 @@ def plot_kmeans_clusters(
     print(f"저장: {out_dir / 'kmeans_cluster_trend.png'}")
 
 
-def plot_all(df: pd.DataFrame, out_dir: Path | str = "outputs") -> None:
+def plot_all(df: pd.DataFrame, out_dir: Path | str = "outputs/figures/basic") -> None:
     """모든 시각화 생성"""
     plot_monthly_trend(df, out_dir=out_dir)
     plot_top_districts(df, out_dir=out_dir)

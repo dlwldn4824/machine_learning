@@ -158,7 +158,7 @@ df = df.merge(macro_q, on=["연도", "분기"], how="left")
 
 ---
 
-## 6. 시각화 (`outputs/inflation/`)
+## 6. 시각화 (`outputs/figures/inflation/`)
 
 ### 6.1 생성 그래프
 
@@ -187,7 +187,7 @@ python scripts/run_inflation_viz.py
 | `data/raw/` 또는 `~/Downloads/` | 소비자물가지수_10년.xlsx |
 | | 월별_소비자물가_등락률_10년.xlsx |
 | | 기대인플레이션율_전국_10년.xlsx |
-| `outputs/inflation/` | 시각화 PNG |
+| `outputs/figures/inflation/` | 시각화 PNG |
 
 ---
 
@@ -225,3 +225,37 @@ python scripts/run_inflation_viz.py
 | CPI_qoq | 전분기 대비 CPI 변동률 | 비율 (0.01=1%) |
 | CPI_yoy | 전년 동분기 대비 CPI 변동률 | 비율 |
 | 물가상승률 | ML 피처용. CPI_qoq와 동일 | 비율 |
+
+---
+
+## 11. 디저트 매출과 소비자물가 상관분석
+
+### 11.1 실행
+
+```bash
+python scripts/analyze_dessert_cpi_correlation.py
+```
+
+### 11.2 데이터
+
+- **디저트**: `data/processed/dessert_2020_2024.csv` 또는 `dessert_ml_ready.csv`
+- **집계**: (연도, 분기)별 총 매출, 평균 매출, 평균 디저트 비중
+- **물가**: CPI, inflation_mom, expected_inflation, CPI_qoq, CPI_yoy
+
+### 11.3 출력
+
+| 파일 | 내용 |
+|------|------|
+| dessert_cpi_correlation_heatmap.png | 상관행렬 히트맵 |
+| dessert_cpi_scatter.png | CPI vs 총 디저트 매출 산점도 |
+| dessert_cpi_timeseries.png | 매출·CPI 시계열 2축 |
+| dessert_inflation_growth_scatter.png | 물가 변동 vs 매출 성장률 |
+| dessert_cpi_correlation.csv | 상관계수 표 |
+| dessert_cpi_merged_quarterly.csv | 병합 분기 테이블 |
+
+### 11.4 예시 해석 (2020~2024)
+
+- **총_디저트_매출 vs CPI**: 상관계수 약 0.82 (강한 양의 상관)
+  - CPI 상승 구간에 디저트 매출도 함께 증가하는 경향 (시계열 공동 추세)
+- **총_디저트_매출 vs expected_inflation**: 약 0.80
+- **평균_디저트_비중 vs CPI_yoy**: 약 0.66

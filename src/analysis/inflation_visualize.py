@@ -13,7 +13,7 @@ for f in fm.fontManager.ttflist:
 else:
     plt.rcParams["font.family"] = "DejaVu Sans"
 
-OUT_DIR = Path("outputs/inflation")
+OUT_DIR = Path("outputs/figures/inflation")
 
 
 def plot_inflation_all(
@@ -21,7 +21,7 @@ def plot_inflation_all(
     cpi_monthly: pd.Series | None = None,
     mom_monthly: pd.Series | None = None,
     expected_monthly: pd.Series | None = None,
-    out_dir: Path | str = "outputs/inflation",
+    out_dir: Path | str = "outputs/figures/inflation",
 ) -> None:
     """소비자물가 전처리 결과 전체 시각화"""
     out_dir = Path(out_dir)

@@ -11,4 +11,4 @@ if __name__ == "__main__":
     df = load_dessert_data()
     df = aggregate_by_year_quarter_dong(df, drop_age=True)
     plot_all(df)
-    print("\n시각화 완료. outputs/ 폴더를 확인하세요.")
+    print("\n시각화 완료. outputs/figures/basic/ 폴더를 확인하세요.")

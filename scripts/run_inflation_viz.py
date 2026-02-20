@@ -44,10 +44,10 @@ if __name__ == "__main__":
     print(f"   분기 테이블: {len(macro_q)}행")
     print(macro_q.head(10).to_string())
 
-    print("\n2. 시각화 생성 (outputs/inflation/)...")
+    print("\n2. 시각화 생성 (outputs/figures/inflation/)...")
     cpi_m = load_cpi_wide(path_cpi) if path_cpi.exists() else None
     mom_m = load_inflation_mom_wide(path_mom) if path_mom.exists() else None
     exp_m = load_expected_inflation_wide(path_expected) if path_expected.exists() else None
     plot_inflation_all(macro_q, cpi_monthly=cpi_m, mom_monthly=mom_m, expected_monthly=exp_m)
 
-    print("\n소비자물가 전처리 시각화 완료. outputs/inflation/ 폴더를 확인하세요.")
+    print("\n소비자물가 전처리 시각화 완료. outputs/figures/inflation/ 폴더를 확인하세요.")

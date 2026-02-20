@@ -228,9 +228,19 @@ log_당월_매출_금액 = log(당월_매출_금액 + 1)
 
 ---
 
-## 8. 시각화 결과물 (`outputs/`)
+## 8. 시각화 결과물 (`outputs/figures/`)
 
-### 8.1 기본 시각화
+시각화 이미지는 `outputs/figures/` 하위 폴더에 저장됩니다.
+
+| 폴더 | 내용 |
+|------|------|
+| `outputs/figures/basic/` | 기본 시각화 (매출 추이, 상위행정동, 성별) |
+| `outputs/figures/preprocess/` | 전처리 결과 (비중, 로그, lag, 성장률, 계절성, 상관) |
+| `outputs/figures/inflation/` | 소비자물가 전처리 결과 |
+| `outputs/figures/correlation/` | 디저트-물가 상관분석 |
+| `outputs/figures/ml/` | k-means 군집 시각화 |
+
+### 8.1 기본 시각화 (`outputs/figures/basic/`)
 
 | 파일 | 내용 | 용도 |
 |------|------|------|
@@ -238,7 +248,7 @@ log_당월_매출_금액 = log(당월_매출_금액 + 1)
 | top_districts.png | 매출 상위 15개 행정동 | 핵심 지역 식별 |
 | gender_ratio.png | 연도별 남·여 매출 금액 비교 | 성별 소비 패턴 |
 
-### 8.2 전처리 결과 시각화
+### 8.2 전처리 결과 시각화 (`outputs/figures/preprocess/`)
 
 | 파일 | 내용 | 확인 포인트 |
 |------|------|-------------|
@@ -249,7 +259,7 @@ log_당월_매출_금액 = log(당월_매출_금액 + 1)
 | preprocess_seasonality.png | 분기별 month_sin, month_cos | 계절 패턴 |
 | preprocess_correlation.png | 파생변수 상관행렬 히트맵 | 다중공선성 사전 확인 |
 
-### 8.3 ML 및 군집 결과물
+### 8.3 ML 및 군집 결과물 (`outputs/figures/ml/`)
 
 | 파일 | 내용 | 활용 |
 |------|------|------|
@@ -257,7 +267,7 @@ log_당월_매출_금액 = log(당월_매출_금액 + 1)
 | vif_results.csv | VIF 값 (피처별) | 다중공선성 진단 |
 | kmeans_cluster_trend.png | 군집별 디저트 비중 시계열 | 행정동 유형화, 군집 해석 |
 
-### 8.4 소비자물가 전처리 결과물 (`outputs/inflation/`)
+### 8.4 소비자물가 전처리 결과물 (`outputs/figures/inflation/`)
 
 | 파일 | 내용 |
 |------|------|
@@ -271,6 +281,16 @@ log_당월_매출_금액 = log(당월_매출_금액 + 1)
 
 → 상세 설명: **docs/INFLATION_PREPROCESSING.md**
 
+### 8.5 디저트-소비자물가 상관분석 결과물 (`outputs/figures/correlation/`)
+
+| 파일 | 내용 |
+|------|------|
+| dessert_cpi_correlation_heatmap.png | 디저트 매출·비중 vs CPI 상관행렬 |
+| dessert_cpi_scatter.png | CPI vs 총 디저트 매출 산점도 |
+| dessert_cpi_timeseries.png | 매출·CPI 시계열 2축 |
+| dessert_inflation_growth_scatter.png | 물가 변동 vs 매출 성장률 |
+| dessert_cpi_correlation.csv | 상관계수 표 |
+
 ---
 
 ## 9. 실행 스크립트
@@ -282,7 +302,8 @@ log_당월_매출_금액 = log(당월_매출_금액 + 1)
 | `scripts/run_visualize.py` | 기본 시각화 (추이, 상위행정동, 성별) | monthly_trend, top_districts, gender_ratio |
 | `scripts/run_preprocess_viz.py` | 전처리 결과 시각화 | preprocess_*.png |
 | `scripts/run_ml_pipeline.py` | 전체 파이프라인: 로드→전처리→타겟→CPI→IQR→VIF→학습→군집 | feature_importance.csv, vif_results.csv, kmeans_cluster_trend.png |
-| `scripts/run_inflation_viz.py` | CPI·인플레이션 전처리 결과 시각화 | outputs/inflation/*.png (상세: docs/INFLATION_PREPROCESSING.md) |
+| `scripts/run_inflation_viz.py` | CPI·인플레이션 전처리 결과 시각화 | outputs/figures/inflation/*.png |
+| `scripts/analyze_dessert_cpi_correlation.py` | dessert vs 소비자물가 상관분석 | outputs/figures/correlation/*.png, outputs/correlation/*.csv |
 
 ---
 
